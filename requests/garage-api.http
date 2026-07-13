@@ -1,0 +1,145 @@
+### Estapar Garage API — IntelliJ HTTP client
+### Variables (edit per environment)
+@baseUrl = http://localhost:3003
+@simulatorBaseUrl = http://localhost:3000
+@licensePlate = ZUL0001
+@sector = A
+@date = 2025-01-01
+@spotLat = -23.561684
+@spotLng = -46.655981
+
+############################################################
+# 01 — Simulator (optional; run the container first)
+############################################################
+
+### Garage configuration (served by the simulator, not this app)
+GET {{simulatorBaseUrl}}/garage
+
+############################################################
+# 02 — Health
+############################################################
+
+### Liveness
+GET {{baseUrl}}/actuator/health/liveness
+
+### Readiness (DOWN until the garage configuration is synchronized)
+GET {{baseUrl}}/actuator/health/readiness
+
+### Metrics
+GET {{baseUrl}}/actuator/metrics/garage_webhook_events_total
+
+############################################################
+# 03 — Happy path
+############################################################
+
+### ENTRY
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+X-Correlation-Id: demo-happy-01
+
+{
+  "license_plate": "{{licensePlate}}",
+  "entry_time": "2025-01-01T12:00:00.000Z",
+  "event_type": "ENTRY"
+}
+
+### PARKED
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{
+  "license_plate": "{{licensePlate}}",
+  "lat": {{spotLat}},
+  "lng": {{spotLng}},
+  "event_type": "PARKED"
+}
+
+### EXIT (95 minutes later → 2 billable hours)
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{
+  "license_plate": "{{licensePlate}}",
+  "exit_time": "2025-01-01T13:35:00.000Z",
+  "event_type": "EXIT"
+}
+
+### Revenue for the sector/date
+GET {{baseUrl}}/revenue?date={{date}}&sector={{sector}}
+
+############################################################
+# 04 — Free parking (≤ 30 minutes)
+############################################################
+
+### ENTRY
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "FREE001", "entry_time": "2025-01-01T09:00:00.000Z", "event_type": "ENTRY" }
+
+### PARKED
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "FREE001", "lat": -23.561664, "lng": -46.655961, "event_type": "PARKED" }
+
+### EXIT within 30 minutes → 0.00
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "FREE001", "exit_time": "2025-01-01T09:30:00.000Z", "event_type": "EXIT" }
+
+############################################################
+# 05 — Validation (expect 400)
+############################################################
+
+### Unknown event type
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "ZUL0001", "event_type": "FLYING" }
+
+### ENTRY missing entry_time
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "ZUL0001", "event_type": "ENTRY" }
+
+### PARKED missing coordinates
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "ZUL0001", "event_type": "PARKED" }
+
+### Revenue with invalid date
+GET {{baseUrl}}/revenue?date=01-01-2025&sector=A
+
+############################################################
+# 06 — Idempotency (repeat any of the happy-path requests)
+############################################################
+
+### Duplicate ENTRY → 200 with result DUPLICATE
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{
+  "license_plate": "{{licensePlate}}",
+  "entry_time": "2025-01-01T12:00:00.000Z",
+  "event_type": "ENTRY"
+}
+
+############################################################
+# 07 — Conflicts
+############################################################
+
+### EXIT without an active session → 404
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "GHOST99", "exit_time": "2025-01-01T13:00:00.000Z", "event_type": "EXIT" }
+
+### PARKED at unknown coordinates → 404
+POST {{baseUrl}}/webhook
+Content-Type: application/json
+
+{ "license_plate": "{{licensePlate}}", "lat": 0.0, "lng": 0.0, "event_type": "PARKED" }

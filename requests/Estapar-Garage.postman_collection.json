@@ -1,0 +1,365 @@
+{
+  "info": {
+    "name": "Estapar Garage",
+    "description": "Garage backend test — webhook ingestion, dynamic pricing, billing and revenue. Set the environment (local) before running. Folder 01 reads the simulator config and saves sector/spot variables used by the happy path.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Simulator",
+      "item": [
+        {
+          "name": "GET Garage Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body.garage && body.garage.length) {",
+                  "  const sector = body.garage[0];",
+                  "  pm.environment.set('sector', sector.sector);",
+                  "  pm.environment.set('basePrice', sector.base_price != null ? sector.base_price : sector.basePrice);",
+                  "}",
+                  "if (body.spots && body.spots.length) {",
+                  "  const spot = body.spots.find(s => s.sector === pm.environment.get('sector')) || body.spots[0];",
+                  "  pm.environment.set('spotLat', spot.lat);",
+                  "  pm.environment.set('spotLng', spot.lng);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{simulatorBaseUrl}}/garage", "host": ["{{simulatorBaseUrl}}"], "path": ["garage"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Health",
+      "item": [
+        {
+          "name": "GET Application Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Happy Path",
+      "item": [
+        {
+          "name": "POST ENTRY",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('processed', () => pm.expect(pm.response.json().result).to.eql('PROCESSED'));",
+                  "pm.test('correlation id echoed', () => pm.response.to.have.header('X-Correlation-Id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_plate\": \"{{licensePlate}}\",\n  \"entry_time\": \"2025-01-01T12:00:00.000Z\",\n  \"event_type\": \"ENTRY\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "POST PARKED",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('processed', () => pm.expect(pm.response.json().result).to.eql('PROCESSED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_plate\": \"{{licensePlate}}\",\n  \"lat\": {{spotLat}},\n  \"lng\": {{spotLng}},\n  \"event_type\": \"PARKED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "POST EXIT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('processed', () => pm.expect(pm.response.json().result).to.eql('PROCESSED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_plate\": \"{{licensePlate}}\",\n  \"exit_time\": \"2025-01-01T13:35:00.000Z\",\n  \"event_type\": \"EXIT\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "GET Revenue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('currency is BRL', () => pm.expect(body.currency).to.eql('BRL'));",
+                  "pm.test('has amount', () => pm.expect(body).to.have.property('amount'));",
+                  "pm.test('has timestamp', () => pm.expect(body).to.have.property('timestamp'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/revenue?date={{date}}&sector={{sector}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["revenue"],
+              "query": [
+                { "key": "date", "value": "{{date}}" },
+                { "key": "sector", "value": "{{sector}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Free Parking",
+      "item": [
+        {
+          "name": "ENTRY",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"FREE001\", \"entry_time\": \"2025-01-01T09:00:00.000Z\", \"event_type\": \"ENTRY\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "PARKED",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"FREE001\", \"lat\": {{spotLat}}, \"lng\": {{spotLng}}, \"event_type\": \"PARKED\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "EXIT within 30 minutes",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('status is 200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"FREE001\", \"exit_time\": \"2025-01-01T09:30:00.000Z\", \"event_type\": \"EXIT\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "Revenue (still 0.00 for FREE only day)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/revenue?date=2025-01-01&sector={{sector}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["revenue"],
+              "query": [
+                { "key": "date", "value": "2025-01-01" },
+                { "key": "sector", "value": "{{sector}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Validation",
+      "item": [
+        {
+          "name": "Unknown event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('problem detail', () => pm.expect(pm.response.json()).to.have.property('title'));",
+                  "pm.test('has correlationId', () => pm.expect(pm.response.json()).to.have.property('correlationId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"ZUL0001\", \"event_type\": \"FLYING\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "Invalid ENTRY (no entry_time)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status is 400', () => pm.response.to.have.status(400));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"ZUL0001\", \"event_type\": \"ENTRY\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "Invalid PARKED (no coordinates)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status is 400', () => pm.response.to.have.status(400));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"ZUL0001\", \"event_type\": \"PARKED\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "Invalid Revenue date",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status is 400', () => pm.response.to.have.status(400));"] } }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/revenue?date=01-01-2025&sector={{sector}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["revenue"],
+              "query": [
+                { "key": "date", "value": "01-01-2025" },
+                { "key": "sector", "value": "{{sector}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Idempotency",
+      "item": [
+        {
+          "name": "Duplicate ENTRY",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('duplicate acknowledged', () => pm.expect(pm.response.json().result).to.eql('DUPLICATE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"license_plate\": \"{{licensePlate}}\",\n  \"entry_time\": \"2025-01-01T12:00:00.000Z\",\n  \"event_type\": \"ENTRY\"\n}" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Conflicts",
+      "item": [
+        {
+          "name": "EXIT without ENTRY",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status is 404', () => pm.response.to.have.status(404));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"GHOST99\", \"exit_time\": \"2025-01-01T13:00:00.000Z\", \"event_type\": \"EXIT\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "PARKED without ENTRY",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status is 404', () => pm.response.to.have.status(404));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"GHOST88\", \"lat\": {{spotLat}}, \"lng\": {{spotLng}}, \"event_type\": \"PARKED\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        },
+        {
+          "name": "PARKED at unknown coordinates",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status is 404', () => pm.response.to.have.status(404));"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"license_plate\": \"{{licensePlate}}\", \"lat\": 0.0, \"lng\": 0.0, \"event_type\": \"PARKED\" }" },
+            "url": { "raw": "{{baseUrl}}/webhook", "host": ["{{baseUrl}}"], "path": ["webhook"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3003" },
+    { "key": "simulatorBaseUrl", "value": "http://localhost:3000" }
+  ]
+}
