@@ -4,12 +4,14 @@
 
 ## Current state (2026-07-13)
 
-- **Phase 0 (discovery) complete** — simulator reverse-engineered live, specs 00–08 and
-  ADR-001..005 written. Implementation phases 1–10 pending (see `PLAN.md`).
-- Repo: `E:\Estapar\parking-lot-service` → `https://github.com/fmodesto30/parking-lot-service`
-  (remote exists, empty).
+- **All 10 phases complete.** `./mvnw clean verify` green: 139 tests (unit + Testcontainers
+  MySQL integration + deterministic concurrency + e2e + ArchUnit). `docker compose config`
+  valid; `docker compose build` succeeds.
+- Repo: `E:\Estapar\parking-lot-service` → `https://github.com/fmodesto30/parking-lot-service`.
 - Branch model: work on `develop`, merged `--no-ff` into `main` at delivery (workspace
   git-workflow convention; PRs impossible with local PAT — Contents:write only).
+- Commits (develop): discovery → bootstrap → domain → persistence/sync → event use cases →
+  web API → metrics → evaluator docs → CI/ArchUnit/e2e.
 
 ## Environment facts (this machine)
 
