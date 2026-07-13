@@ -1,10 +1,12 @@
-package com.estapar.garage.webhook.application;
+package com.estapar.garage.shared.application;
 
 import java.time.Instant;
 
 /**
- * Port: idempotency registry (ADR-004). {@link #register} must run inside the business
- * transaction so a rollback also forgets the fingerprint.
+ * Port: idempotency registry (ADR-004). A shared concern — produced by the webhook module,
+ * consumed by the parking use cases — so it lives in {@code shared} to keep both modules
+ * pointing inward. {@link #register} must run inside the business transaction so a rollback
+ * also forgets the fingerprint.
  */
 public interface ProcessedEventRegistry {
 
