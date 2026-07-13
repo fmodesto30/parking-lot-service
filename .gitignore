@@ -1,0 +1,27 @@
+# Build
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets — never commit real credentials
+.env
+*.env.local
+
+# Logs & temp
+*.log
+hs_err_pid*
+replay_pid*
