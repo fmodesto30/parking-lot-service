@@ -1,0 +1,17 @@
+* text=auto
+
+# The Maven wrapper shell script must stay LF-executable inside Linux containers/CI
+mvnw text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.java text
+*.sql text
+*.yml text
+*.yaml text
+*.md text
+*.xml text
+
+*.jar binary
+*.png binary

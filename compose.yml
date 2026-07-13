@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-garage}
+      MYSQL_USER: ${MYSQL_USER:-garage}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-garage}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-local-only}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - garage-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  garage-api:
+    build: .
+    ports:
+      - "3003:3003"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-garage}
+      MYSQL_USER: ${MYSQL_USER:-garage}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-garage}
+      # host.docker.internal works out of the box on Docker Desktop (Windows/macOS);
+      # extra_hosts below makes it work on Linux too. This reaches a simulator running
+      # either with --network=host (Linux) or with -p 3000:3000 (any OS), and also the
+      # optional in-compose simulator below (which publishes 3000).
+      GARAGE_SIMULATOR_BASE_URL: ${GARAGE_SIMULATOR_BASE_URL:-http://host.docker.internal:3000}
+      GARAGE_BUSINESS_ZONE: ${GARAGE_BUSINESS_ZONE:-America/Sao_Paulo}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # Optional: run the whole stack (including the simulator) inside one compose network.
+  #   docker compose --profile simulator up --build
+  # The simulator is wired straight to the API via CLIENT_WEBHOOK_URL (env var verified
+  # against the real binary — see docs/specs/00-challenge-analysis.md §2.1).
+  garage-sim:
+    image: cfontes0estapar/garage-sim:1.0.0
+    profiles: ["simulator"]
+    environment:
+      CLIENT_WEBHOOK_URL: http://garage-api:3003/webhook
+    ports:
+      - "3000:3000"
+    depends_on:
+      garage-api:
+        condition: service_started
+
+volumes:
+  garage-mysql-data:

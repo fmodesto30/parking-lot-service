@@ -1,0 +1,8 @@
+# Test profile: Testcontainers injects the datasource via @ServiceConnection.
+garage:
+  simulator:
+    sync:
+      on-startup: false
+      max-attempts: 2
+      initial-backoff: 50ms
+      max-backoff: 100ms

@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: parking-lot-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:garage}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+    username: ${MYSQL_USER:garage}
+    password: ${MYSQL_PASSWORD:garage}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+server:
+  port: 3003
+  error:
+    include-stacktrace: never
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-components: always
+  info:
+    build:
+      enabled: true
+
+garage:
+  business-zone: ${GARAGE_BUSINESS_ZONE:America/Sao_Paulo}
+  simulator:
+    base-url: ${GARAGE_SIMULATOR_BASE_URL:http://localhost:3000}
+    connect-timeout: 2s
+    read-timeout: 5s
+    sync:
+      max-attempts: ${GARAGE_SYNC_MAX_ATTEMPTS:10}
+      initial-backoff: 1s
+      max-backoff: 15s
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    level: "%5p [cid=%X{correlationId:-}]"
