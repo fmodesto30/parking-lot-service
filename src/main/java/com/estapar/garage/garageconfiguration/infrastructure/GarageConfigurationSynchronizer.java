@@ -3,6 +3,7 @@ package com.estapar.garage.garageconfiguration.infrastructure;
 import com.estapar.garage.garageconfiguration.application.GarageCatalogFetchException;
 import com.estapar.garage.garageconfiguration.application.SynchronizeGarageConfigurationUseCase;
 import com.estapar.garage.shared.configuration.GarageProperties;
+import com.estapar.garage.shared.observability.GarageMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -23,10 +24,13 @@ public class GarageConfigurationSynchronizer {
 
     private final SynchronizeGarageConfigurationUseCase useCase;
     private final GarageProperties properties;
+    private final GarageMetrics metrics;
 
-    public GarageConfigurationSynchronizer(SynchronizeGarageConfigurationUseCase useCase, GarageProperties properties) {
+    public GarageConfigurationSynchronizer(
+            SynchronizeGarageConfigurationUseCase useCase, GarageProperties properties, GarageMetrics metrics) {
         this.useCase = useCase;
         this.properties = properties;
+        this.metrics = metrics;
     }
 
     @Async
@@ -40,6 +44,7 @@ public class GarageConfigurationSynchronizer {
         try {
             useCase.execute();
         } catch (GarageCatalogFetchException e) {
+            metrics.configurationSyncFailure();
             // Do not crash-loop: fall back to any configuration already in the database.
             boolean recovered = useCase.recoverFromExistingConfiguration();
             if (!recovered) {
