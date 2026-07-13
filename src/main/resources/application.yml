@@ -32,6 +32,10 @@ management:
       probes:
         enabled: true
       show-components: always
+      group:
+        readiness:
+          # Instance is only READY once the garage catalog has been synchronized.
+          include: readinessState,garageConfiguration
   info:
     build:
       enabled: true
