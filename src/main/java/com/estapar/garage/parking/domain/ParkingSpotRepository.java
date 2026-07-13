@@ -8,6 +8,8 @@ public interface ParkingSpotRepository {
 
     ParkingSpot save(ParkingSpot spot);
 
+    Optional<ParkingSpot> findByExternalId(long externalId);
+
     /** Locks the spot at the exact coordinates for the current transaction. */
     Optional<ParkingSpot> lockByCoordinates(Coordinates coordinates);
 

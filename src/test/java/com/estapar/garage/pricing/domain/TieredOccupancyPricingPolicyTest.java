@@ -41,7 +41,7 @@ class TieredOccupancyPricingPolicyTest {
             softly.assertThat(price.basePrice().amount()).isEqualByComparingTo("40.50");
             softly.assertThat(price.multiplier()).isEqualByComparingTo("0.90");
             softly.assertThat(price.effectiveHourlyPrice().amount()).isEqualByComparingTo("36.45");
-            softly.assertThat(price.occupancyRate().value()).isEqualByComparingTo("0.2000");
+            softly.assertThat(price.occupancyRate()).isEqualByComparingTo("0.2000");
         });
     }
 

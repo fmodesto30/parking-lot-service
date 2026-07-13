@@ -4,7 +4,7 @@ CREATE TABLE parking_charge (
     session_id  BIGINT        NOT NULL,
     sector_code VARCHAR(16)   NOT NULL,
     amount      DECIMAL(10,2) NOT NULL,
-    currency    CHAR(3)       NOT NULL DEFAULT 'BRL',
+    currency    VARCHAR(3)    NOT NULL DEFAULT 'BRL',
     charged_at  DATETIME(6)   NOT NULL,
     created_at  DATETIME(6)   NOT NULL,
     PRIMARY KEY (id),

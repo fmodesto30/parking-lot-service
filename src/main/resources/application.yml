@@ -43,6 +43,7 @@ garage:
     connect-timeout: 2s
     read-timeout: 5s
     sync:
+      on-startup: ${GARAGE_SYNC_ON_STARTUP:true}
       max-attempts: ${GARAGE_SYNC_MAX_ATTEMPTS:10}
       initial-backoff: 1s
       max-backoff: 15s

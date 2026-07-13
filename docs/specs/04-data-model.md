@@ -71,7 +71,7 @@ id           BIGINT PK AUTO_INCREMENT
 session_id   BIGINT NOT NULL UNIQUE FK→parking_session
 sector_code  VARCHAR(16) NOT NULL
 amount       DECIMAL(10,2) NOT NULL CHECK (amount >= 0)
-currency     CHAR(3) NOT NULL DEFAULT 'BRL'
+currency     VARCHAR(3) NOT NULL DEFAULT 'BRL'   -- VARCHAR (not CHAR) so ddl-auto=validate matches the JPA String mapping
 charged_at   DATETIME(6) NOT NULL      -- = exit time (business event instant)
 created_at   DATETIME(6)
 INDEX (sector_code, charged_at)
@@ -81,7 +81,7 @@ No UPDATE/DELETE path exists in the application for this table.
 ### processed_webhook_event (V6)
 ```sql
 id            BIGINT PK AUTO_INCREMENT
-fingerprint   CHAR(64) NOT NULL UNIQUE  -- SHA-256 hex
+fingerprint   VARCHAR(64) NOT NULL UNIQUE  -- SHA-256 hex; VARCHAR to match JPA String under ddl-auto=validate
 event_type    VARCHAR(16) NOT NULL
 license_plate VARCHAR(16) NOT NULL
 received_at   DATETIME(6) NOT NULL

@@ -1,6 +1,6 @@
 CREATE TABLE processed_webhook_event (
     id            BIGINT      NOT NULL AUTO_INCREMENT,
-    fingerprint   CHAR(64)    NOT NULL,
+    fingerprint   VARCHAR(64) NOT NULL,
     event_type    VARCHAR(16) NOT NULL,
     license_plate VARCHAR(16) NOT NULL,
     received_at   DATETIME(6) NOT NULL,

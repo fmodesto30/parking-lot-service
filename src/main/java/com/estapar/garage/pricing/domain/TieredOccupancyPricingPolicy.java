@@ -27,7 +27,7 @@ public final class TieredOccupancyPricingPolicy implements OccupancyPricingPolic
             throw new IllegalArgumentException("sector is full; pricing requires available capacity");
         }
         var multiplier = multiplierFor(occupancy);
-        return new AppliedPrice(basePrice, occupancy, multiplier, basePrice.multiplyBy(multiplier));
+        return new AppliedPrice(basePrice, occupancy.value(), multiplier, basePrice.multiplyBy(multiplier));
     }
 
     private BigDecimal multiplierFor(OccupancyRate occupancy) {
