@@ -247,6 +247,9 @@ gauge `garage_active_sessions`. Readiness fica **DOWN** até a configuração si
 
 ## 16. Como executar
 
+> Guia operacional passo a passo, com troubleshooting dos problemas reais (ordem de subida,
+> re-sync, aspas no `&`, payloads que evitam 400): **[`RUNBOOK.md`](RUNBOOK.md)**.
+
 Pré-requisitos: Docker. (Para rodar os testes/local sem container: JDK 21.)
 
 ```bash
